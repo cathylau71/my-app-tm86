@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Training Scheduler</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--ink:#1c2430;--mute:#647084;--line:#dbe0e8;--acc:#1f4e79;--on:#fff;--ALL:#55606f;--GID:#2f6f8f;--SID:#7a5c99;--IOD:#a06a00;--CMOD:#3d7a55;--warn:#b3402a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161c;--card:#1a2029;--ink:#e6e9ee;--mute:#93a0b3;--line:#2b3441;--acc:#8ab8e3;--on:#10151b;--ALL:#9aa5b5;--GID:#5aa6c8;--SID:#a98cc9;--IOD:#d9a441;--CMOD:#6fbd8b;--warn:#e07a63}}
+:root[data-theme="dark"]{--bg:#12161c;--card:#1a2029;--ink:#e6e9ee;--mute:#93a0b3;--line:#2b3441;--acc:#8ab8e3;--on:#10151b;--ALL:#9aa5b5;--GID:#5aa6c8;--SID:#a98cc9;--IOD:#d9a441;--CMOD:#6fbd8b;--warn:#e07a63}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:26px;font-weight:600;margin:0 0 2px}.sub{color:var(--mute);margin:0 0 16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:9px 12px}.stat b{font-size:18px;font-weight:600}.stat span{display:block;color:var(--mute);font-size:13px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}.sp{flex:1}
+.seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--card)}
+button,select,input,textarea{font:inherit;color:inherit}
+.seg button{border:0;background:none;padding:7px 12px;cursor:pointer}.seg button[aria-pressed=true]{background:var(--acc);color:var(--on)}
+.btn,a.btn{display:inline-block;border:1px solid var(--acc);background:var(--acc);color:var(--on);padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:500;text-decoration:none;font-size:14px}
+.btn.ghost{background:none;color:var(--acc)}.btn.del{border-color:var(--warn);color:var(--warn);background:none}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+h2.mh{font-size:15px;color:var(--mute);font-weight:600;margin:18px 0 8px}
+.s{display:grid;grid-template-columns:110px 1fr auto;gap:12px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:6px;padding:12px 14px;margin-bottom:8px}
+@media(max-width:640px){.s{grid-template-columns:1fr}}
+.s .d{font-weight:600}.s .d small{display:block;color:var(--mute);font-weight:400}
+.s .t{font-weight:600}.s p{margin:3px 0;color:var(--mute);max-width:70ch}.s .m{font-size:13px;color:var(--mute)}
+.warn{color:var(--warn)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:14px;margin-bottom:12px}
+.row{display:grid;grid-template-columns:1fr 1.3fr 140px auto;gap:8px}@media(max-width:700px){.row{grid-template-columns:1fr}}
+input,select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line)}td,th{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--mute);font-weight:500;font-size:13px}
+.tw{overflow-x:auto}
+.empty{color:var(--mute);padding:24px;text-align:center;border:1px dashed var(--line);border-radius:6px}
+dialog{border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);width:min(620px,95vw);max-height:92vh;padding:18px}
+dialog::backdrop{background:rgba(0,0,0,.45)}dialog label{display:block;font-size:13px;color:var(--mute);margin:10px 0 3px}
+.hi{display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:5px 0}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.g3{grid-template-columns:1fr 1fr 1fr}
+.nom{max-height:170px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:6px 10px}.nom label{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px;margin:4px 0}.nom input{width:auto}
+.foot{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.lk{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.amb{color:#8a5a00}@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .amb{color:#e0b04d}}:root[data-theme="dark"] .amb{color:#e0b04d}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:760px){.dg{grid-template-columns:1fr}}
+.bars{display:flex;align-items:flex-end;gap:5px;margin-top:10px}.bars>div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;font-size:12px;color:var(--mute);min-width:0}.bars i{display:block;width:100%;background:var(--acc);border-radius:3px 3px 0 0;min-height:2px}
+.sb{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--line);margin:10px 0}.sb span{display:block;height:100%}
+.chk{display:flex;flex-wrap:wrap;gap:6px 16px}.chk label{display:flex;align-items:center;gap:6px;margin:0;color:var(--ink);font-size:14px}.chk input{width:auto;min-height:0}
+</style></head><body><main>
+<h1 id="ttl">Training Scheduler</h1>
+<p class="sub">Plan each training topic in detail, nominate officers, then send calendar invites that block their time.</p>
+<div class="stats" id="stats"></div>
+<div class="bar"><div class="seg" id="views"></div><div class="seg" id="divs"></div><span class="sp"></span><select id="yr" aria-label="Year" style="width:auto"></select><button class="btn ghost" id="ny" type="button">Plan next year</button><button class="btn" id="new">Add session</button></div>
+<div id="main"></div>
+</main>
+<dialog id="dlg">
+<h2 id="dt" style="margin:0;font-size:18px">Session</h2>
+<label for="fTop">Topic</label><input id="fTop">
+<label for="fDet">Details: objectives, content, who should attend</label><textarea id="fDet" rows="3"></textarea>
+<div class="g g3"><div style="grid-column:1/-1"><label>Divisions that can attend</label><div id="fDivs" class="chk"></div><div id="derr" class="warn" role="alert"></div></div><div><label for="fDate">Start date</label><input id="fDate" type="date"></div><div><label for="fTime">Start time</label><input id="fTime" type="time"></div>
+<div><label for="fHrs">Total hours</label><input id="fHrs" type="number" min="0.5" step="0.5"></div><div><label for="fSrc">Reason</label><select id="fSrc"><option>Interest</option><option>Concern</option></select></div><div><label for="fPri">Priority</label><select id="fPri"><option>High</option><option>Medium</option><option>Low</option></select></div></div>
+<div class="g"><div><label for="fVen">Venue or link</label><input id="fVen"></div><div><label for="fOwn">Trainer</label><input id="fOwn"></div></div>
+<label for="fSt">Status</label><select id="fSt"></select>
+<label>Officers to send for training</label><div class="nom" id="nom"></div>
+<div id="clash" role="status" aria-live="polite"></div>
+<div class="foot"><button class="btn ghost" id="all">Select all listed</button><button class="btn ghost" id="none">Clear</button></div>
+<label>Calendar invites (blocks the officers' time once you send them)</label><div class="lk" id="lk"></div>
+<p class="m" id="lkn" style="font-size:13px;color:var(--mute);margin:6px 0 0"></p>
+<div class="foot"><button class="btn" id="save">Save session</button><button class="btn ghost" id="cancel">Close</button><span class="sp"></span><button class="btn del" id="del">Delete</button></div>
+</dialog>
+<dialog id="ydlg"><h2 id="yt" style="margin:0 0 8px;font-size:18px"></h2><p id="yp" style="margin:0"></p><div class="foot"><button class="btn" id="yCopy">Copy this year's sessions</button><button class="btn ghost" id="yEmpty">Start empty</button><button class="btn ghost" id="yCancel">Cancel</button></div></dialog>
+<dialog id="odlg">
+<h2 style="margin:0;font-size:18px">Officer profile</h2>
+<div class="g"><div><label for="oN">Name</label><input id="oN"></div><div><label for="oE">Email</label><input id="oE" type="email"></div>
+<div><label for="oD">Division</label><select id="oD"></select></div><div><label for="oR">Role or rank</label><input id="oR"></div>
+<div><label for="oY">Years of experience</label><input id="oY" type="number" min="0"></div></div>
+<label for="oX">Experience and specialisms</label><textarea id="oX" rows="3" placeholder="Areas worked, notable cases, skills"></textarea>
+<label>Past training</label><div id="oH"></div>
+<div class="g g3" style="margin-top:8px"><div><input id="oT" list="tl" placeholder="Training topic" aria-label="Past training topic"></div><div><input id="oTd" type="date" aria-label="Date completed"></div><div><input id="oP" placeholder="Provider" aria-label="Provider"></div></div>
+<div class="foot"><button class="btn ghost" id="oAdd">Add past training</button></div>
+<div class="foot"><button class="btn" id="oSave">Save profile</button><button class="btn ghost" id="oClose">Close</button></div>
+<datalist id="tl"></datalist>
+</dialog>
+<script>
+const K="ts2027-v1",MN=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const D=["GID","SID","IOD","CMOD"],ST=["Planned","Confirmed","Completed","Cancelled"],PR={H:"High",M:"Medium",L:"Low"};
+const p2=x=>String(x).padStart(2,"0"),ymd=d=>d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate());
+const tue=m=>{const f=new Date(2027,m,1);return ymd(new Date(2027,m,1+(2-f.getDay()+7)%7+7))};
+const seed={
+ALL:[[6,"Joint case simulation across all divisions","I","H",14,"Mock case from intake through investigation, intelligence and case management. Tests handovers between divisions."]],
+GID:[[0,"Legal and legislative update","C","H",3,"Recent changes to law and procedure that affect investigations and evidence."],[1,"Evidence handling and chain of custody","C","H",6,"Collecting, labelling, storing and documenting evidence so it stands up in court."],[2,"Data protection and information security refresher","C","H",2,"Handling personal data and case information securely."],[3,"Investigative interviewing and statement taking","I","H",14,"Planning and conducting interviews, taking accurate statements, practical role-plays."],[4,"Report and case-file writing","I","M",7,"Clear, consistent reports and case files that meet the standard needed for review."],[5,"Court testimony and mock cross-examination","I","M",7,"Giving evidence with confidence, with a mock cross-examination."],[8,"Workload prioritisation and case triage","C","M",4,"Deciding what to work first when caseloads are heavy."],[9,"Wellbeing and resilience after distressing material","C","H",3,"Recognising and managing the effects of exposure to distressing material."],[10,"Supervision and leadership for team leads","I","M",7,"Supervising investigations, coaching officers and managing performance."]],
+SID:[[0,"Legal update on specialist offences","C","H",3,"Changes to law and procedure for specialist offences."],[1,"Data protection and information security refresher","C","H",2,"Handling personal data and case information securely."],[2,"Digital forensics tools and methods update","C","H",21,"New tools and methods so the team keeps pace with changing technology."],[3,"Cryptocurrency and asset tracing","I","H",14,"Tracing digital assets and funds through blockchains and exchanges."],[4,"Forensic accounting and financial crime typologies","I","H",14,"Reading financial records and recognising common financial crime patterns."],[5,"Complex and cross-border cases","I","M",7,"Running cases across jurisdictions, including mutual legal assistance."],[8,"Expert witness skills","I","M",7,"Presenting specialist findings clearly and defending them under questioning."],[9,"Wellbeing and resilience","C","H",3,"Managing the effects of long, complex and distressing cases."],[10,"Succession planning and knowledge transfer","C","M",4,"Passing specialist knowledge on so skills are not lost when people move."]],
+IOD:[[0,"Legal limits on collection and data protection","C","H",3,"What intelligence staff may collect and how it must be handled."],[1,"Information security and leak prevention","C","H",3,"Protecting sensitive information and spotting leak risks."],[2,"OSINT techniques and tradecraft","I","H",14,"Open-source research methods, verification and safe practice."],[3,"Structured analytic techniques and cognitive bias","I","H",14,"Methods for sound analysis and avoiding common thinking errors."],[4,"Link and network analysis tools","I","M",7,"Mapping relationships and networks with analysis software."],[5,"Operational planning and risk assessment","C","H",7,"Planning operations and assessing risk to staff and the case."],[7,"Producing usable intelligence for investigators","C","M",4,"Writing intelligence products investigators can act on."],[9,"Wellbeing and burnout prevention","C","H",3,"Recognising and preventing burnout in analysts and operations staff."],[10,"Source handling and documentation refresher","C","M",4,"Correct handling and record keeping for sources."]],
+CMOD:[[0,"Legal update and disclosure obligations","C","H",3,"Changes to law and what must be disclosed and when."],[1,"Case management system: advanced use","I","H",7,"Advanced features, shortcuts and reports in the case management system."],[2,"Records management and data-quality standards","C","H",4,"Consistent data entry and record keeping across divisions."],[3,"Disclosure and document management","C","H",7,"Managing documents and disclosure schedules without gaps."],[4,"Liaison with prosecutors and partner agencies","I","M",4,"Working effectively with prosecutors and partners."],[5,"Workflow, bottlenecks and handover standards","C","H",4,"Finding bottlenecks and agreeing a common handover standard."],[8,"Performance reporting and dashboards","I","M",4,"Building and reading performance reports."],[9,"Wellbeing and resilience","C","H",3,"Managing pressure in a coordination role."],[10,"Stakeholder communication and coordination","I","M",4,"Clear updates and coordination across divisions and partners."]]};
+let n=0;const init=()=>({sessions:Object.entries(seed).flatMap(([d,a])=>a.map(([m,t,s,p,h,x])=>({id:++n,divs:d=="ALL"?[...D]:[d],year:2027,date:tue(m),time:"09:00",hrs:h,topic:t,src:s=="C"?"Concern":"Interest",pri:PR[p],ven:"",own:"",det:x,st:"Planned",nom:[]}))),off:[],year:2027,n:1000});
+let S;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}if(!S||!S.sessions)S=init();
+S.year=S.year||2027;S.sessions.forEach(x=>{if(!x.divs)x.divs=x.div=="ALL"?[...D]:[x.div||"GID"];delete x.div;if(!x.year)x.year=x.date?+x.date.slice(0,4):S.year});
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
+let view="dash",fd="All",cur=null,tmp=new Set();const $=s=>document.querySelector(s);
+function h(t,a={},...k){const e=document.createElement(t);for(const[x,v]of Object.entries(a)){if(x=="class")e.className=v;else if(x.startsWith("on"))e[x]=v;else if(x=="style")e.style.cssText=v;else e.setAttribute(x,v)}k.flat().forEach(c=>e.append(c));return e}
+const vis=s=>s.year===S.year&&(fd=="All"||s.divs.includes(fd));
+const dl=a=>a.length==D.length?"All divisions":a.join(", ");
+const seg=(el,it,c,fn)=>el.replaceChildren(...it.map(([k,l])=>h("button",{"aria-pressed":k==c,onclick:()=>fn(k)},l)));
+const offOf=id=>S.off.find(o=>o.id==id);
+function slots(date,time,hrs){ // one block per working day, 7 hours max a day
+ const out=[];if(!date||!time)return out;let d=new Date(date+"T00:00:00"),left=+hrs||0,i=1;const[H,Mi]=time.split(":").map(Number);
+ while(left>0&&i<40){while(d.getDay()==0||d.getDay()==6)d.setDate(d.getDate()+1);const u=Math.min(7,left),e=H*60+Mi+u*60;
+  out.push({day:i,date:ymd(d),s:p2(H)+":"+p2(Mi),e:p2(Math.floor(e/60)%24)+":"+p2(e%60)});left-=u;i++;d.setDate(d.getDate()+1)}
+ return out}
+const fmtD=(s)=>new Date(s+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
+function when(s){const sl=slots(s.date,s.time,s.hrs);if(!sl.length)return["Date to be set",""];const l=sl[sl.length-1];
+ return[fmtD(sl[0].date),sl.length>1?sl.length+" days to "+fmtD(l.date):sl[0].s+" to "+sl[0].e]}
+function render(){
+ seg($("#views"),[["dash","Dashboard"],["sch","Schedule"],["off","Officers"]],view,k=>{view=k;render()});
+ seg($("#divs"),["All",...D].map(x=>[x,x]),fd,k=>{fd=k;render()});
+ const ss=S.sessions.filter(vis),nm=ss.reduce((a,s)=>a+s.nom.length,0);
+ $("#stats").replaceChildren(...[["Sessions",String(ss.length)],["Officers on roster",String(S.off.length)],["Nominations made",String(nm)],["Sessions with nobody nominated",String(ss.filter(s=>!s.nom.length&&s.st!="Cancelled").length)],["Sessions with overlaps",String(ss.filter(x=>x.st!="Cancelled"&&clash(x.id,x.date,x.time,x.hrs,x.divs,x.nom).length).length)]].map(([a,b])=>h("div",{class:"stat"},h("b",{},b),h("span",{},a))));
+ $("#new").hidden=view!="sch";$("#yr").hidden=$("#ny").hidden=view=="off";
+ const ys=[...new Set([...S.sessions.map(x=>x.year),S.year])].sort();$("#yr").replaceChildren(...ys.map(y=>h("option",{value:y},y)));$("#yr").value=S.year;
+ $("#ny").textContent=ys.includes(S.year+1)?"Go to "+(S.year+1):"Plan "+(S.year+1);$("#ttl").textContent=document.title="Training Scheduler "+S.year;$("#tl").replaceChildren(...[...new Set(S.sessions.map(x=>x.topic))].map(t=>h("option",{value:t})));view=="dash"?dash():view=="sch"?sch():off();
+}
+function sch(){
+ const l=S.sessions.filter(vis).sort((a,b)=>(a.date||"9")<(b.date||"9")?-1:1),out=[];let last="";
+ for(const s of l){const mk=s.date?MN[+s.date.slice(5,7)-1]+" "+s.date.slice(0,4):"No date yet";
+  if(mk!=last){out.push(h("h2",{class:"mh"},mk));last=mk}
+  const w=when(s),names=s.nom.map(offOf).filter(Boolean).map(o=>o.name);
+  out.push(h("div",{class:"s",style:"--c:var(--"+(s.divs.length==1?s.divs[0]:"ALL")+")"},
+   h("div",{class:"d"},w[0],h("small",{},w[1])),
+   h("div",{},h("div",{class:"t"},s.topic),h("p",{},s.det||"No details added yet."),
+    h("div",{class:"m"},dl(s.divs),", ",s.src,", ",s.pri," priority, ",s.hrs," hours, ",s.st,s.ven?", "+s.ven:"",s.own?", trainer "+s.own:""),
+    h("div",{class:"m"+(names.length?"":" warn")},names.length?"Officers: "+names.join(", "):"No officers nominated yet"),...(s.st=="Cancelled"?[]:clash(s.id,s.date,s.time,s.hrs,s.divs,s.nom).map(x=>h("div",{class:"m "+(x.ppl.length?"warn":"amb")},clashText(x))))),
+   h("div",{},h("button",{class:"btn ghost",onclick:()=>edit(s)},"Plan and send"))))}
+ $("#main").replaceChildren(...(out.length?out:[h("div",{class:"empty"},"No sessions yet. Use Add session.")]));
+}
+function dash(){
+ const all=S.sessions.filter(vis),ss=all.filter(x=>x.st!="Cancelled"),H=a=>a.reduce((t,x)=>t+(+x.hrs||0),0);
+ const mo=Array.from({length:12},(_,i)=>ss.filter(x=>x.date&&+x.date.slice(5,7)-1==i)),mh=mo.map(H),mx=Math.max(1,...mh);
+ const P=(t,...k)=>h("div",{class:"panel"},h("h3",{style:"margin:0 0 4px;font-size:16px"},t),...k);
+ const scheduled=new Set(ss.flatMap(x=>x.nom)),ds=fd=="All"?D:[fd];
+ const rows=ds.map(d=>{const a=ss.filter(x=>x.divs.includes(d)),of=S.off.filter(o=>o.div==d),cov=of.filter(o=>scheduled.has(o.id)).length,
+  seats=ss.reduce((t,x)=>t+x.nom.filter(id=>{const o=offOf(id);return o&&o.div==d}).length,0);
+  return h("tr",{},h("td",{},d),h("td",{},String(a.length)),h("td",{},String(H(a))),h("td",{},a.filter(x=>x.src=="Interest").length+" / "+a.filter(x=>x.src=="Concern").length),h("td",{},String(a.filter(x=>x.st=="Completed").length)),h("td",{},of.length?cov+" of "+of.length+" ("+Math.round(100*cov/of.length)+"%)":"No officers"),h("td",{},String(seats)))});
+ const sc=ST.map(t=>all.filter(x=>x.st==t).length),tot=all.length||1,col=["var(--ALL)","var(--acc)","var(--CMOD)","var(--warn)"];
+ const L=(t,a)=>h("div",{style:"margin:10px 0"},h("b",{},t+" ("+a.length+")"),h("div",{style:"color:var(--mute);font-size:13px"},a.length?a.slice(0,8).join("; ")+(a.length>8?"; and "+(a.length-8)+" more":""):"None"));
+ const nod=ss.filter(x=>!x.date);
+ $("#main").replaceChildren(
+  h("div",{class:"dg"},
+   P("Training hours by month",h("div",{class:"bars"},...mo.map((a,i)=>h("div",{title:MN[i]+": "+a.length+" sessions, "+mh[i]+" hours"},h("span",{},mh[i]||""),h("i",{style:"height:"+Math.round(90*mh[i]/mx)+"px"}),h("span",{},MN[i].slice(0,3)))))),
+   P("Status of sessions",h("div",{class:"sb"},...sc.map((n,i)=>h("span",{style:"width:"+100*n/tot+"%;background:"+col[i]}))),
+    h("div",{style:"color:var(--mute);font-size:14px"},ST.map((t,i)=>t+" "+sc[i]).join(", ")),
+    h("div",{style:"margin-top:10px;color:var(--mute);font-size:14px"},"Cross-division sessions: "+ss.filter(x=>x.divs.length>1).length+" of "+ss.length+". Total hours: "+H(ss)+"."))),
+  P("By division",h("div",{class:"tw"},h("table",{},h("thead",{},h("tr",{},...["Division","Sessions","Hours","Interest / Concern","Completed","Officers scheduled","Nominations"].map(x=>h("th",{},x)))),h("tbody",{},...rows))),
+   h("div",{style:"color:var(--mute);font-size:13px;margin-top:8px"},"Sessions that span divisions count in each division. Officers scheduled means nominated to at least one session this year.")),
+  P("Needs attention",
+   L("Sessions with no date",nod.map(x=>x.topic)),
+   L("Sessions with nobody nominated",ss.filter(x=>!x.nom.length).map(x=>x.topic)),
+   L("Sessions with overlaps",ss.filter(x=>clash(x.id,x.date,x.time,x.hrs,x.divs,x.nom).length).map(x=>x.topic)),
+   L("Officers not scheduled this year",S.off.filter(o=>(fd=="All"||o.div==fd)&&!scheduled.has(o.id)).map(o=>o.name+" ("+o.div+")"))));
+}
+function off(){
+ const nm=h("input",{placeholder:"Officer name","aria-label":"Officer name"}),em=h("input",{type:"email",placeholder:"Email address","aria-label":"Email"}),dv=h("select",{"aria-label":"Division"},...D.map(d=>h("option",{},d)));
+ if(fd!="All")dv.value=fd;
+ const add=()=>{if(!nm.value.trim()||!em.value.includes("@")){(nm.value.trim()?em:nm).focus();return}S.off.push({id:++S.n,name:nm.value.trim(),email:em.value.trim(),div:dv.value});save();render()};
+ const l=S.off.filter(o=>fd=="All"||o.div==fd);
+ $("#main").replaceChildren(h("div",{class:"panel"},h("div",{class:"row"},nm,em,dv,h("button",{class:"btn",onclick:add},"Add officer"))),
+  l.length?h("div",{class:"tw"},h("table",{},h("thead",{},h("tr",{},...["Name","Division","Role","Experience","Past trainings","Nominated",""].map(x=>h("th",{},x)))),
+   h("tbody",{},...l.map(o=>h("tr",{},h("td",{},o.name),h("td",{},o.div),h("td",{},o.role||"-"),h("td",{},o.yrs?o.yrs+" yrs":"-"),h("td",{},String(hist(o).length)),h("td",{},String(S.sessions.filter(s=>s.nom.includes(o.id)).length)),
+    h("td",{},h("button",{class:"btn ghost",style:"margin-right:6px",onclick:()=>oedit(o)},"Profile"),h("button",{class:"btn del",onclick:()=>{S.off=S.off.filter(x=>x!=o);S.sessions.forEach(s=>s.nom=s.nom.filter(i=>i!=o.id));save();render()}},"Remove"))))))):
+  h("div",{class:"empty"},"No officers yet. Add the officers who attend training, with the email address their calendar uses."));
+}
+const nz=x=>(x||"").trim().toLowerCase();
+const hist=o=>[...(o.hist||[]).map(x=>({t:x.t,d:x.d})),...S.sessions.filter(x=>x.st=="Completed"&&x.nom.includes(o.id)).map(x=>({t:x.topic,d:x.date}))];
+const trained=(o,t)=>t&&hist(o).find(x=>nz(x.t)==nz(t));
+let co=null,ch=[];
+function oedit(o){co=o;ch=(o.hist||[]).map(x=>({...x}));$("#oN").value=o.name;$("#oE").value=o.email;$("#oD").value=o.div;$("#oR").value=o.role||"";$("#oY").value=o.yrs||"";$("#oX").value=o.exp||"";ohist();$("#odlg").showModal()}
+function ohist(){const done=S.sessions.filter(x=>x.st=="Completed"&&x.nom.includes(co.id));
+ $("#oH").replaceChildren(...(ch.length||done.length?[...ch.map((x,i)=>h("div",{class:"hi"},h("span",{},x.t+(x.d?" ("+x.d+")":"")+(x.p?", "+x.p:"")),h("button",{class:"btn del",onclick:()=>{ch.splice(i,1);ohist()}},"Remove"))),...done.map(x=>h("div",{class:"hi"},h("span",{},x.topic+(x.date?" ("+x.date+")":"")),h("span",{style:"color:var(--mute)"},"Completed in this planner")))]:[h("span",{style:"color:var(--mute)"},"No past training recorded yet.")]))}
+$("#oD").replaceChildren(...D.map(d=>h("option",{},d)));
+$("#oAdd").onclick=()=>{const t=$("#oT").value.trim();if(!t){$("#oT").focus();return}ch.push({t,d:$("#oTd").value,p:$("#oP").value.trim()});$("#oT").value=$("#oTd").value=$("#oP").value="";ohist()};
+$("#oSave").onclick=()=>{if(!$("#oN").value.trim()){$("#oN").focus();return}Object.assign(co,{name:$("#oN").value.trim(),email:$("#oE").value.trim(),div:$("#oD").value,role:$("#oR").value.trim(),yrs:+$("#oY").value||0,exp:$("#oX").value.trim(),hist:ch});save();$("#odlg").close();render()};
+$("#oClose").onclick=()=>$("#odlg").close();
+const divSel=()=>D.filter(d=>$("#c"+d).checked);
+const listed=()=>S.off.filter(o=>divSel().includes(o.div));
+function nomList(){const l=listed();$("#nom").replaceChildren(...(l.length?l.map(o=>{const c=h("input",{type:"checkbox",id:"o"+o.id,onchange:()=>{c.checked?tmp.add(o.id):tmp.delete(o.id);links()}});c.checked=tmp.has(o.id);const tr=trained(o,$("#fTop").value);return h("label",{},c,o.name+" ("+o.div+(o.yrs?", "+o.yrs+" yrs":"")+")",tr?h("span",{class:"warn"}," already trained"+(tr.d?" "+tr.d:"")):"")}):[h("span",{style:"color:var(--mute)"},"No officers for this division. Add them on the Officers tab.")]))}
+const mins=t=>{const a=t.split(":").map(Number);return a[0]*60+a[1]};
+const blk=(d,t,h)=>slots(d,t,h).map(z=>({d:z.date,a:mins(z.s),b:mins(z.e)}));
+function clash(self,date,time,hrs,divs,noms){
+ const mine=blk(date,time,hrs),out=[];if(!mine.length)return out;
+ for(const o of S.sessions){if(o.id===self||o.st=="Cancelled")continue;
+  const ob=blk(o.date,o.time,o.hrs);if(!mine.some(m=>ob.some(x=>x.d===m.d&&m.a<x.b&&x.a<m.b)))continue;
+  const ppl=noms.filter(id=>o.nom.includes(id)).map(offOf).filter(Boolean).map(x=>x.name),dv=divs.filter(d=>o.divs.includes(d));
+  if(ppl.length||dv.length)out.push({s:o,ppl,dv})}
+ return out}
+const clashText=x=>"Overlaps with \""+x.s.topic+"\" on "+when(x.s).filter(Boolean).join(", ")+". "+(x.ppl.length?"Booked on both: "+x.ppl.join(", ")+".":x.dv.join(", ")+(x.dv.length>1?" both have":" has")+" training at this time.");
+function showClash(){const c=clash(cur&&cur.id,$("#fDate").value,$("#fTime").value,$("#fHrs").value,divSel(),[...tmp]);
+ $("#clash").replaceChildren(...c.map(x=>h("div",{class:x.ppl.length?"warn":"amb",style:"margin-top:6px"},clashText(x))))}
+function links(){
+ showClash();
+ const em=[...tmp].map(offOf).filter(Boolean).map(o=>o.email),sl=slots($("#fDate").value,$("#fTime").value,$("#fHrs").value),t=$("#fTop").value,ven=$("#fVen").value;
+ const body=t+"\n\n"+$("#fDet").value+(ven?"\nVenue: "+ven:"")+($("#fOwn").value?"\nTrainer: "+$("#fOwn").value:"");
+ const c=x=>x.replace(/[-:]/g,""),q=o=>Object.entries(o).map(([k,v])=>k+"="+encodeURIComponent(v)).join("&"),many=sl.length>1;
+ const a=[];for(const z of sl){const sub=t+(many?" (day "+z.day+" of "+sl.length+")":"");
+  a.push(h("a",{class:"btn",target:"_blank",rel:"noopener",href:"https://outlook.office.com/calendar/0/deeplink/compose?"+q({path:"/calendar/action/compose",rru:"addevent",subject:sub,startdt:z.date+"T"+z.s+":00",enddt:z.date+"T"+z.e+":00",body,location:ven,to:em.join(";")})},"Outlook"+(many?" day "+z.day:"")));
+  a.push(h("a",{class:"btn ghost",target:"_blank",rel:"noopener",href:"https://calendar.google.com/calendar/render?"+q({action:"TEMPLATE",text:sub,dates:c(z.date)+"T"+c(z.s)+"00/"+c(z.date)+"T"+c(z.e)+"00",details:body,location:ven,add:em.join(",")})},"Google"+(many?" day "+z.day:"")))}
+ $("#lk").replaceChildren(...a);
+ $("#lkn").textContent=!sl.length?"Set a start date, time and hours to create invites.":!em.length?"Nominate officers above so their addresses are filled into the invite.":"Each button opens a ready invite for "+em.length+" officer"+(em.length>1?"s":"")+". Check it and press Send in your calendar.";
+}
+function edit(s){
+ cur=s;tmp=new Set(s.nom||[]);const nw=!s.id;$("#dt").textContent=nw?"Add session":"Plan and send";
+ $("#fTop").value=s.topic||"";$("#fDet").value=s.det||"";$("#derr").textContent="";D.forEach(d=>$("#c"+d).checked=(s.divs||[]).includes(d));$("#cALL").checked=(s.divs||[]).length==D.length;$("#fDate").value=s.date||"";$("#fTime").value=s.time||"09:00";
+ $("#fHrs").value=s.hrs||7;$("#fSrc").value=s.src||"Interest";$("#fPri").value=s.pri||"Medium";$("#fVen").value=s.ven||"";$("#fOwn").value=s.own||"";$("#fSt").value=s.st||"Planned";
+ $("#del").hidden=nw;nomList();links();$("#dlg").showModal();
+}
+$("#fDivs").replaceChildren(...[...D,"ALL"].map(d=>{const c=h("input",{type:"checkbox",id:"c"+d});c.onchange=()=>{$("#derr").textContent="";if(d=="ALL")D.forEach(x=>$("#c"+x).checked=c.checked);else $("#cALL").checked=divSel().length==D.length;nomList();links()};return h("label",{},c,d=="ALL"?"All divisions":d)}));
+$("#fSt").replaceChildren(...ST.map(o=>h("option",{},o)));
+for(const i of ["fTop","fDet","fDate","fTime","fHrs","fVen","fOwn"])$("#"+i).oninput=links;
+$("#fTop").oninput=()=>{nomList();links()};
+$("#all").onclick=()=>{listed().forEach(o=>tmp.add(o.id));nomList();links()};
+$("#none").onclick=()=>{tmp.clear();nomList();links()};
+$("#save").onclick=()=>{if(!$("#fTop").value.trim()){$("#fTop").focus();return}
+ if(!divSel().length){$("#derr").textContent="Choose at least one division.";return}
+ const o={topic:$("#fTop").value.trim(),det:$("#fDet").value.trim(),divs:divSel(),year:$("#fDate").value?+$("#fDate").value.slice(0,4):S.year,date:$("#fDate").value,time:$("#fTime").value,hrs:+$("#fHrs").value||0,src:$("#fSrc").value,pri:$("#fPri").value,ven:$("#fVen").value.trim(),own:$("#fOwn").value.trim(),st:$("#fSt").value,nom:[...tmp].filter(id=>listed().some(o=>o.id==id))};
+ cur.id?Object.assign(cur,o):S.sessions.push({id:++S.n,...o});save();$("#dlg").close();render()};
+$("#cancel").onclick=()=>$("#dlg").close();
+$("#del").onclick=()=>{S.sessions=S.sessions.filter(x=>x!=cur);save();$("#dlg").close();render()};
+$("#new").onclick=()=>edit({divs:fd=="All"?[]:[fd]});
+$("#yr").onchange=()=>{S.year=+$("#yr").value;save();render()};
+$("#ny").onclick=()=>{const y=S.year+1;if(S.sessions.some(x=>x.year===y)){S.year=y;save();render();return}
+ const c=S.sessions.filter(x=>x.year===S.year).length;$("#yt").textContent="Plan "+y;
+ $("#yp").textContent=c?"Copy the "+c+" sessions from "+S.year+" into "+y+"? Dates move forward 52 weeks (same weekday), status goes back to Planned and nominations are cleared. Your officers and their training history are kept.":"Start an empty plan for "+y+"? Your officers and their training history are kept.";
+ $("#yCopy").hidden=!c;$("#ydlg").showModal()};
+const startYear=copy=>{const y=S.year+1;if(copy)S.sessions.filter(x=>x.year===S.year).forEach(x=>{let d=null;if(x.date){d=new Date(x.date+"T00:00:00");d.setDate(d.getDate()+364);if(d.getFullYear()!==y)d.setDate(d.getDate()+7)}S.sessions.push({...x,id:++S.n,divs:[...x.divs],year:y,date:d?ymd(d):"",st:"Planned",nom:[]})});
+ S.year=y;save();$("#ydlg").close();render()};
+$("#yCopy").onclick=()=>startYear(true);$("#yEmpty").onclick=()=>startYear(false);$("#yCancel").onclick=()=>$("#ydlg").close();
+render();
+</script></body></html>
